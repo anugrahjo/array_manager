@@ -1,27 +1,32 @@
-"""Define the Vector class"""
+"""Define the CSCMatrix class"""
 import numpy as np
 from sparse_matrix import SparseMatrix
 
 class CSCMatrix(SparseMatrix):
     """
-    Dictionary which contains views for different variables.
-    The value corresponding to the key as the name of a variable represents the view of that variable which is generated from the self.data attribute of the Vector object.
+    Class that generates the standard csc sparse matrix from given matrix in native format.
 
     Attributes
     ----------
+    native : Matrix or BlockMatrix
+        Matrix in native format that generates the standard CSCMatrix format
     data : np.ndarray
-        Concatenated vector of a list of variables 
+        Vector containing nonzeros of the sparse matrix sorted first by column index and then by row index.
+    rows : np.ndarray
+        Vector containing sorted row indices (sorted in increasing order along each column) of nonzeros of a sparse matrix.
+    ind_ptr : np.ndarray
+        Vector whose first entry is zero and the n-th entry stores the number of nonzeros up to (n-1)th column starting from the first column.
 
     """
 
     def __init__(self, native_matrix):
         """
-        Initialize the Vector object by allocating a zero vector of desired size.
+        Initialize the CSCMatrix object by initializing a SparseMatrix object and then compute the sorting indices (bottom-up and top-down) for conversions between self and its native.
 
         Parameters
         ----------
-        matrices : list or dict
-            List of variables that are concatenated
+        native_matrix : Matrix or BlockMatrix
+            Matrix in native format which needs to converted to the standard CSCMatrix format
         """
         super.__init__(native_matrix)
 
@@ -31,12 +36,12 @@ class CSCMatrix(SparseMatrix):
         sorting_indices_new_cols = np.argsort(new_col_indices)
 
         # precomputed fwd permutation matrix
-        self.combined_sorting_indices = sorting_indices_rows[sorting_indices_new_cols]
+        self.bottom_up_sorting_indices = sorting_indices_rows[sorting_indices_new_cols]
         
         #optimizer requested format
-        self.rows = native_matrix.rows[self.combined_sorting_indices]
-        final_cols = native_matrix.cols[self.combined_sorting_indices]
+        self.rows = native_matrix.rows[self.bottom_up_sorting_indices]
+        final_cols = native_matrix.cols[self.bottom_up_sorting_indices]
         self.ind_ptr = np.insert(np.bincount(final_cols).cumsum(), 0, 0)
 
         # precomputed reverse permutation matrix
-        self.inverse_combined_sorting_indices = np.argsort(combined_sorting_indices)
+        self.top_down_sorting_indices = np.argsort(self.bottom_up_sorting_indices)

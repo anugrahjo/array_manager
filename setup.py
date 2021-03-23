@@ -1,10 +1,10 @@
 from distutils.core import setup
 
 setup(
-    name='array assembly and format manager',
+    name='array_manager',
     version='0.1',
     packages=[
-        'array assembly and format manager',
+        'array_manager',
     ],
     install_requires=[
         'numpy',
