@@ -25,10 +25,10 @@ touch .nojekyll
 
 # add README for gh-pages branch
 cat > README.md <<EOF
-# atomics
+# linalg
 
 This branch contains the generated documentation pages for
-[atomics](https://lsdolab.github.io/atomics).
+[linalg](https://anugrahjo.github.io/array_manager).
 
 EOF
 
