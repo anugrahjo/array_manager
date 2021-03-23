@@ -17,3 +17,6 @@ Documentation
    :titlesonly:
 
    _src_docs/getting_started.rst
+   
+   _src_docs/page2.rst
+

@@ -1,0 +1,7 @@
+**/.#*
+build/
+_build/
+*.so
+*.egg*
+__pycache__
+.vscode
