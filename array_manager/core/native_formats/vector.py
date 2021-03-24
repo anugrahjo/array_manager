@@ -11,7 +11,6 @@ class Vector(object):
     ----------
     data : np.ndarray
         Concatenated vector from the dixtionary of subvectors 
-
     """
 
     def __init__(self, vector_components_dict):
@@ -32,8 +31,6 @@ class Vector(object):
 
         return dict_
 
-
-
     def __init__(self, vector_components_dict, setup_views=False):
         """
         Initialize the Vector object by allocating a zero vector of desired size.
@@ -43,7 +40,6 @@ class Vector(object):
         variables_list : VariablesList
             List of variables that are concatenated
         """
-
         self.data = np.zeros(vector_components_dict.vector_size)
 
         if setup_views:

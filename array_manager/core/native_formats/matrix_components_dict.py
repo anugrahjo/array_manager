@@ -1,19 +1,35 @@
-"""Define the PartialsList class"""
+"""Define the MatrixComponentsDict class"""
 import numpy as np
 from vector import Vector
 
 
-# Deprecated (mostly?)
-# 1. Safer to go with compute_pRpx, compute_pRpy, compute_pFpx, compute_pFpy 
-#    - e.g., compute_pRpx(self, x, y, pRpx) where pRpx is DerivativesDict.values
-#    - e.g., user code looks like pRpx['f', 'x'] = ... (clean, simple)
-
-
 class MatrixComponentsDict(dict):
+    """
+    Dictionary of dictionaries representing a matrix composed of multiple submatrices. Each dictionary within this dictionary represents the data corresponding to a submatrix such as values, row indices, column indices, index pointers, etc.
+    For example, this can be a dictionary of jacobians in which each jacobian corresponds to a specific class of variables such as the design variables in an optimization problem.
+    Each dictionary in this dictionary (which stores the data pertaining to a subvector) contains values corresponding to six keys, namely,
+        1. shape : shape of the subvector
+        5. start_index : starting index of the subvector in the concatenated contiguous vector containing all subvectors from the same class
+        6. end_index : ending index of the subvector in the concatenated contiguous vector containing all subvectors from the same class
 
+    Attributes
+    ----------
+    vector_components_dict1 : VectorComponentsDict
+        Size of the vector that contains all the subvectors
+    vector_components_dict2 : VectorComponentsDict
+        Size of the vector that contains all the subvectors
+    num_nonzeros : int
+        Size of the vector that contains all the subvectors
+    dense_shape : tuple
+        Size of the vector that contains all the subvectors
+    dense_size : int
+        Size of the vector that contains all the subvectors
+    """
     def __init__(self, vector_components_dict1, vector_components_dict2):
+        """
+        Initialize a dictionary object with a default value for the vector_size attribute. 
+        """
         # Note: In the case of partials, 1 represents output and 2 represents input respectively.
-        
         self.vector_components_dict1 = vector_components_dict1
         self.vector_components_dict2 = vector_components_dict2
         self.num_nonzeros = 0
@@ -23,7 +39,14 @@ class MatrixComponentsDict(dict):
 
 
     def __setitem__(self, key : tuple, component_dict: dict):
-        
+        """
+        Add/replace a dictionary corresponding to a submatrix in the current list of submatrix dictionaries.
+
+        Parameters
+        ----------
+        component_dict : dict
+            Submatrix dictionary to be added/replaced in self.
+        """
         if len(key) != 2:
             raise KeyError('The submatrix key provided {} has only one subvector reference; it should be referenced by two subvector names'.format(key))
 
