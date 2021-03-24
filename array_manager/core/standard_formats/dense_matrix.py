@@ -9,10 +9,9 @@ class DenseMatrix(object):
     Attributes
     ----------
     native : Matrix or BlockMatrix
-        Matrix in native format that generates the standard DenseMatrix format
+        Matrix in the native format that needs to be converted into the standard DenseMatrix format
     data : np.ndarray
-        Concatenated vector of a list of variables 
-
+        Dense matrix generated from the matrix in the native format
     """
 
     def __init__(self, native_matrix):
@@ -22,7 +21,7 @@ class DenseMatrix(object):
         Parameters
         ----------
         native_matrix : Matrix or BlockMatrix
-            Matrix in native format which needs to converted to standard DenseMatrix format
+            Matrix in the native format which needs to converted to the standard DenseMatrix format
         """
         self.native = native_matrix
         self.data = np.zeros(native_matrix.dense_shape)

@@ -9,10 +9,11 @@ class SparseMatrix(object):
     Attributes
     ----------
     native : Matrix or BlockMatrix
-        Matrix in native format that generates the standard DenseMatrix format
+        Matrix in the native format that needs to be converted into any of the standard SparseMatrix formats
     data : np.ndarray
-        Concatenated vector of a list of variables 
-
+        Vector containing nonzeros of the sparse matrix
+    num_nonzeros : int
+        Number of nonzeros in the sparse matrix
     """
 
     def __init__(self, native_matrix):
@@ -22,9 +23,10 @@ class SparseMatrix(object):
         Parameters
         ----------
         native_matrix : Matrix or BlockMatrix
-            Matrix in native format which needs to converted to any standard SparseMatrix format
+            Matrix in the native format which needs to converted to any of the standard SparseMatrix formats
         """
         self.native = native_matrix
+        # Need this (num_nonzeros)?
         self.num_nonzeros = native_matrix.num_nonzeros
         self.data = np.zeros(self.num_nonzeros)
             

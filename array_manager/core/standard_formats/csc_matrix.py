@@ -2,21 +2,24 @@
 import numpy as np
 from sparse_matrix import SparseMatrix
 
+
 class CSCMatrix(SparseMatrix):
+    # Do we need to add attributes of SparseMatrix in dicstring below?
     """
-    Class that generates the standard csc sparse matrix from given matrix in native format.
+    Class that generates the standard csc sparse matrix from given matrix in the native format.
 
     Attributes
     ----------
     native : Matrix or BlockMatrix
-        Matrix in native format that generates the standard CSCMatrix format
+        Matrix in the native format that generates the standard CSCMatrix object
     data : np.ndarray
         Vector containing nonzeros of the sparse matrix sorted first by column index and then by row index.
+    num_nonzeros : int
+        Number of nonzeros in the sparse matrix
     rows : np.ndarray
-        Vector containing sorted row indices (sorted in increasing order along each column) of nonzeros of a sparse matrix.
+        Vector containing sorted row indices (sorted in increasing order along each column) of nonzeros of the sparse matrix.
     ind_ptr : np.ndarray
-        Vector whose first entry is zero and the n-th entry stores the number of nonzeros up to (n-1)th column starting from the first column.
-
+        Vector whose first entry is zero and nth entry stores the number of nonzeros up to (n-1)th column starting from the first column.
     """
 
     def __init__(self, native_matrix):
@@ -26,11 +29,11 @@ class CSCMatrix(SparseMatrix):
         Parameters
         ----------
         native_matrix : Matrix or BlockMatrix
-            Matrix in native format which needs to converted to the standard CSCMatrix format
+            Matrix in the native format which needs to converted to the standard CSCMatrix format
         """
         super.__init__(native_matrix)
 
-        # if sparse_format = 'csc':
+        # sparse_format = 'csc':
         sorting_indices_rows= np.argsort(native_matrix.rows)
         new_col_indices = native_matrix.cols[sorting_indices_rows]
         sorting_indices_new_cols = np.argsort(new_col_indices)
