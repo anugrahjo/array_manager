@@ -4,10 +4,10 @@ Linalg
 Introduction
 ------------
 
-Description of ``linalg`` package
+This package lets easy, efficient assembly and format conversions for matrices assembled from a large number of submatrices that are provided in different formats.
 
-Example link to OpenMDAO website:
-`OpenMDAO framework <https://openmdao.org/>`_
+.. Example link to OpenMDAO website:
+.. `OpenMDAO framework <https://openmdao.org/>`_
 
 Documentation
 -------------
@@ -18,5 +18,8 @@ Documentation
 
    _src_docs/getting_started.rst
    
-   _src_docs/page2.rst
+   _src_docs/native_formats.rst
 
+   _src_docs/standard_formats.rst
+
+   _src_docs/examples.rst

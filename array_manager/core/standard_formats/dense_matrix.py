@@ -28,6 +28,10 @@ class DenseMatrix(object):
 
         # (Can also support col major or row major if optimizer requests so. This implementation uses default python ordering which is row major. Col major would be faster with Fortran-based optimizers)
         self.flattened_indices_of_non_zeros = np.ravel_multi_index((native_matrix.rows, native_matrix.cols), native_matrix.dense_shape)
+        
+        # Initialize with the data given in the native_format
+        np.put(self.data, self.flattened_indices_of_non_zeros, self.native.vals.data)
+
 
     def update_bottom_up(self):
         """

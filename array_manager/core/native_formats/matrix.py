@@ -1,5 +1,7 @@
 """Define the Vector class"""
 import numpy as np
+from array_manager.core.native_formats.vector_components_dict import VectorComponentsDict
+from array_manager.core.native_formats.vector import Vector
 
 
 class Matrix(object):
@@ -9,7 +11,7 @@ class Matrix(object):
 
     Attributes
     ----------
-    vals : np.ndarray
+    vals : Vector
         Concatenated vector of a list of variables 
 
     """
@@ -20,14 +22,15 @@ class Matrix(object):
 
         Parameters
         ----------
-        variables_list : VariablesList
+        matrix_components_dict : VariablesList
             List of variables that are concatenated
         """
-
+        self.matrix_components_dict = matrix_components_dict
         self.dense_shape = matrix_components_dict.dense_shape
         self.dense_size = matrix_components_dict.dense_size
         self.num_nonzeros = matrix_components_dict.num_nonzeros
-        self.density = self.num_nonzeros / self.dense_size
+
+        self.density = float(self.num_nonzeros / self.dense_size)
         self.rows = np.zeros(self.num_nonzeros, dtype=int)
         self.cols = np.zeros(self.num_nonzeros, dtype=int)
 
@@ -36,22 +39,22 @@ class Matrix(object):
         for key, component_dict in matrix_components_dict.items():
             shape = component_dict['shape']
             # COO arrays from given CSR or CSC arrays
-            if component_dict['ind_ptr']:
+            if isinstance(component_dict['ind_ptr'], np.ndarray):
                 ind_ptr = component_dict['ind_ptr']
                 # Compute differences between consecutive elements in the ind_ptr array
                 num_repeats = np.ediff1d(ind_ptr)
-                if component_dict['cols'] == None:
+                if isinstance(component_dict['rows'], np.ndarray):
                     component_dict['cols'] = np.repeat(np.arange(shape[1]), num_repeats)
 
-                elif component_dict['rows'] == None:
+                elif isinstance(component_dict['cols'], np.ndarray):
                     component_dict['rows'] =  np.repeat(np.arange(shape[0]), num_repeats)
 
                 # need this?
                 # del matrix_dict['ind_ptr']
 
-            # Give exception if only one of rows or cols is None at this point
             # Dense matrix component
-            elif !(component_dict['rows']) and !(component_dict['cols']):
+            elif (component_dict['rows'] is None) and (component_dict['cols'] is None):
+                # print('Here')
                 component_dict['rows'] = np.repeat(np.arange(shape[0]), shape[1])
                 component_dict['cols'] = np.tile(np.arange(shape[1]), shape[0])
 
@@ -71,13 +74,12 @@ class Matrix(object):
             vals_shape = component_dict['vals_shape']
             vector_components_dict[key] = dict(shape=vals_shape)
 
-        self.vals = Vector(vector_components_dict, setup_views=setup_views)
+        self.vals = Vector(vector_components_dict)
 
-        # new addition
-        for key, component_dict in matrix_components_dict.items():
-            vals = self.component_dict['vals']
-            if vals:
-                self[key] = vals
+        # for key, component_dict in matrix_components_dict.items():
+        #     vals = self.component_dict['vals']
+        #     if vals:
+        #         self[key] = vals
 
     def __getitem__(self, key):
         # return self.vals_vector.dict_[key]
@@ -89,20 +91,28 @@ class Matrix(object):
         # self.vals_vector[key] = value
         self.vals[key] = value
 
-    def allocate(self, data=None):
-        if data is None:
+    def allocate(self, copy=False, data=None):
+        
+        if data is not None and not copy: 
+            pass
+        else:
             data = np.zeros(self.num_nonzeros)
 
         self.vals.allocate(data=data, setup_views=True)
 
-        ind1 = 0
-        ind2 = 0
-        for i, j in self.sub_matrices:
-            sub_matrix = self.sub_matrices[i, j]
+        for key, component_dict in self.matrix_components_dict.items():
+            vals = component_dict['vals']
+            if vals is not None:
+                self[key] = vals
 
-            ind2 += sub_matrix.num_nonzeros
-            sub_matrix.allocate(data[ind1:ind2])
-            ind1 += sub_matrix.num_nonzeros
+        # ind1 = 0
+        # ind2 = 0
+        # for i, j in self.sub_matrices:
+        #     sub_matrix = self.sub_matrices[i, j]
+
+        #     ind2 += sub_matrix.num_nonzeros
+        #     sub_matrix.allocate(data[ind1:ind2])
+        #     ind1 += sub_matrix.num_nonzeros
 
     def update_bottom_up(self):
         pass

@@ -10,40 +10,29 @@ class Vector(object):
     Attributes
     ----------
     data : np.ndarray
-        Concatenated vector from the dixtionary of subvectors 
+        Concatenated vector from the dictionary of subvectors 
     """
 
     def __init__(self, vector_components_dict):
-        self.vector_components_dict = vector_components_dict
-
-    def allocate(self, data=None, setup_views=False):
-        if data:
-            self.data = data
-        else:
-            self.data = data = np.zeros(self.vector_components_dict.vector_size)
-
-        dict_ = {}
-        for key, component_dict in self.vector_components_dict.items():
-            shape = component_dict['shape']
-            ind1 = component_dict['start_index']
-            ind2 = component_dict['end_index']
-            dict_[name] = data[ind1:ind2].reshape(shape)
-
-        return dict_
-
-    def __init__(self, vector_components_dict, setup_views=False):
         """
         Initialize the Vector object by allocating a zero vector of desired size.
 
         Parameters
         ----------
-        variables_list : VariablesList
+        vector_components_dict : VectorComponentsDict
             List of variables that are concatenated
         """
-        self.data = np.zeros(vector_components_dict.vector_size)
+        self.vector_components_dict = vector_components_dict
+
+    def allocate(self, data=None, setup_views=False):
+        # If data is given, no copy is made, only poiners are stored
+        if data is not None:
+            self.data = data
+        else:
+            self.data = data = np.zeros(self.vector_components_dict.vector_size)
 
         if setup_views:
-            self.dict_ = self.setup_views(vector_components_dict)
+            self.dict_ = self.setup_views(self.vector_components_dict)
 
         else:
             self.dict_ = None
@@ -62,7 +51,7 @@ class Vector(object):
             shape = component_dict['shape']
             ind1 = component_dict['start_index']
             ind2 = component_dict['end_index']
-            dict_[name] = self.data[ind1:ind2].reshape(shape)
+            dict_[key] = self.data[ind1:ind2].reshape(shape)
 
         return dict_
 
@@ -73,7 +62,7 @@ class Vector(object):
         self.dict_[key][:] = value
 
     def __len__(self):
-        return len(self.data)
+        return self.vector_components_dict.vector_size
 
     def __iadd__(self, other):
         self.data += other.data

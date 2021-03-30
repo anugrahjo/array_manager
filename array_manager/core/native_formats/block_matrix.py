@@ -1,5 +1,8 @@
 """Define the Vector class"""
 import numpy as np
+from array_manager.core.native_formats.vector_components_dict import VectorComponentsDict
+from array_manager.core.native_formats.vector import Vector
+from array_manager.core.native_formats.matrix import Matrix
 
 
 class BlockMatrix(object):
@@ -9,7 +12,7 @@ class BlockMatrix(object):
 
     Attributes
     ----------
-    vals : np.ndarray
+    vals : Vector
         Concatenated vector of a list of variables 
 
     """
@@ -37,15 +40,16 @@ class BlockMatrix(object):
             for i in range(len(blocks_list)):
                 if len(blocks_list[i]) != len(blocks_list[0]):
                     raise ValueError('Number of blocks in each row must be the same')
-            shape = (len(blocks_list), len(blocks_list)[0])
+            self.shape = shape = (len(blocks_list), len(blocks_list[0]))
 
             self.sub_matrices = sub_matrices = {
-                i, j: blocks_list[i][j]
+                (i, j) : blocks_list[i][j]
                 for i in range(shape[0])
                 for j in range(shape[1])
             }            
         else:
-            self.sub_matrices = sub_matrices = dict(blocks)
+            self.shape = shape
+            self.sub_matrices = sub_matrices = blocks
         
                
         row_start_indices = np.zeros(shape, dtype=int)
@@ -53,12 +57,28 @@ class BlockMatrix(object):
         col_start_indices = np.zeros(shape, dtype=int)
         col_end_indices = np.zeros(shape, dtype=int)
         self.num_nonzeros = 0
-        self.children = []
+        
+        # # Find a nonzero block
+        # for i in range(shape[0]):
+        #     for j in range(shape[1]):
+        #         # When a block is defined zero
+        #         if type(submatrices[i,j]) ==int:
+        #             if submatrices[i,j] == 0:
+        #                 continue
 
         for i in range(shape[0]):
             for j in range(shape[1]):
+                # When a block is defined zero
+                # if type(submatrices[i,j]) ==int:
+                #     if submatrices[i,j] == 0:
+                #         continue
+
+                if type(sub_matrices[i, j]) not in (BlockMatrix, Matrix):
+                    raise TypeError('Blocks inside the block matrix should be of type Matrix() or BlockMatrix(). Declared block {} is of type {}'.format(sub_matrices[i, j], type(sub_matrices[i, j])))
+
                 if sub_matrices[i, j].dense_shape[0] != sub_matrices[i, 0].dense_shape[0] or sub_matrices[i, j].dense_shape[1] != sub_matrices[0, j].dense_shape[1]:
                     raise ValueError('Given shapes for blocks inside the block matrix are incompatible')
+
                 # Compute start and end indices of each block
                 if i >= 1:
                     row_start_indices[i, j] = row_start_indices[i-1, j] + sub_matrices[i-1, j].dense_shape[0]
@@ -68,15 +88,12 @@ class BlockMatrix(object):
                     col_end_indices[i, j-1] = col_start_indices[i, j]
 
                 self.num_nonzeros += sub_matrices[i, j].num_nonzeros
-                
-                else:
-                    raise TypeError('Blocks inside the block matrix should be of type Matrix() or BlockMatrix(). Declared block {} is of type {}'.format(sub_matrices[i, j], type(sub_matrices[i, j])))
 
         row_end_indices[i, j] = row_start_indices[i, j] + sub_matrices[i, j].dense_shape[0]
         col_end_indices[i, j] = col_start_indices[i, j] + sub_matrices[i, j].dense_shape[1]
         self.dense_shape = (row_end_indices[i, j], col_end_indices[i, j])
         self.dense_size = np.prod(self.dense_shape)
-        self.density = self.num_nonzeros / self.dense_size
+        self.density = float(self.num_nonzeros / self.dense_size)
         self.rows = np.zeros(self.num_nonzeros, dtype=int)
         self.cols = np.zeros(self.num_nonzeros, dtype=int)
 
@@ -100,24 +117,35 @@ class BlockMatrix(object):
 
                 start_index = end_index * 1
 
-        self.vals = Vector(vector_components_dict, setup_views=setup_views)
-
-        # How to compute the above (vals, rows, cols) without allocating/copying vals?
+        self.vals = Vector(vector_components_dict)
 
     def allocate(self, copy=False, data=None):
-        if data is None and not copy:
+        # Line 124 is executed only at the top level when we say copy is not needed. Because for lower levels in the hierarchy, data comes from higher levels and data is never None.
+
+        # if data is None and not copy:
+        #     data = np.zeros(self.num_nonzeros)
+
+        # New addition
+        shape = self.shape
+        if data is not None and not copy: 
+            pass
+        else:
             data = np.zeros(self.num_nonzeros)
 
         self.vals.allocate(data=data, setup_views=True)
 
         ind1 = 0
         ind2 = 0
-        for i, j in self.sub_matrices:
-            sub_matrix = self.sub_matrices[i, j]
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                sub_matrix = self.sub_matrices[i, j]
 
-            ind2 += sub_matrix.num_nonzeros
-            sub_matrix.allocate(data=data[ind1:ind2], copy=copy)
-            ind1 += sub_matrix.num_nonzeros
+                ind2 += sub_matrix.num_nonzeros
+                sub_matrix.allocate(data=data[ind1:ind2], copy=copy)
+                ind1 += sub_matrix.num_nonzeros
+        # To test allocate() works with and without copy=True, run all_in_one.py after commenting out self.update_bottom_up() here. This will give correct results when copy=False and incorrect results when copy=True (only the Matrix objects will contain nonzero values, all BlockMatrix objects' data will be populated with zeros)
+        if copy:
+            self.update_bottom_up()
 
     def update_bottom_up(self):
         for i, j in self.sub_matrices:

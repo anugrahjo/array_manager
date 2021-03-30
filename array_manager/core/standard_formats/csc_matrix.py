@@ -1,10 +1,9 @@
 """Define the CSCMatrix class"""
 import numpy as np
-from sparse_matrix import SparseMatrix
+from array_manager.core.standard_formats.sparse_matrix import SparseMatrix
 
 
 class CSCMatrix(SparseMatrix):
-    # Do we need to add attributes of SparseMatrix in dicstring below?
     """
     Class that generates the standard csc sparse matrix from given matrix in the native format.
 
@@ -31,7 +30,7 @@ class CSCMatrix(SparseMatrix):
         native_matrix : Matrix or BlockMatrix
             Matrix in the native format which needs to converted to the standard CSCMatrix format
         """
-        super.__init__(native_matrix)
+        super().__init__(native_matrix)
 
         # sparse_format = 'csc':
         sorting_indices_rows= np.argsort(native_matrix.rows)
@@ -48,3 +47,6 @@ class CSCMatrix(SparseMatrix):
 
         # precomputed reverse permutation matrix
         self.top_down_sorting_indices = np.argsort(self.bottom_up_sorting_indices)
+
+        # Initialize with the data given in the native_format
+        self.data = self.native.vals.data[self.bottom_up_sorting_indices]
