@@ -51,7 +51,9 @@ class BlockMatrix(object):
             self.shape = shape
             self.sub_matrices = sub_matrices = blocks
         
-               
+        
+        row_sizes = np.zeros(shape[0], dtype=int)
+        col_sizes = np.zeros(shape[1], dtype=int)
         row_start_indices = np.zeros(shape, dtype=int)
         row_end_indices = np.zeros(shape, dtype=int)
         col_start_indices = np.zeros(shape, dtype=int)
@@ -62,35 +64,54 @@ class BlockMatrix(object):
         # for i in range(shape[0]):
         #     for j in range(shape[1]):
         #         # When a block is defined zero
-        #         if type(submatrices[i,j]) ==int:
-        #             if submatrices[i,j] == 0:
+        #         if type(sub_matrices[i,j]) ==int:
+        #             if sub_matrices[i,j] == 0:
         #                 continue
+
+        # Find row and column sizes
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+               # When a block is defined zero
+                if type(sub_matrices[i,j]) == int:
+                    if sub_matrices[i,j] == 0:
+                        continue
+                    else:
+                        raise ValueError('0 is the only scalar value that can be assigned to any block in the declaration')
+
+                if type(sub_matrices[i, j]) not in (BlockMatrix, Matrix):
+                    raise TypeError('Blocks inside the block matrix should be of type Matrix() or BlockMatrix(). Declared block {} is of type {}'.format(sub_matrices[i, j], type(sub_matrices[i, j])))
+                
+                if row_sizes[i] == 0:
+                    row_sizes[i] = sub_matrices[i, j].dense_shape[0]
+                elif row_sizes[i] != sub_matrices[i, j].dense_shape[0]:
+                    raise ValueError('Given shapes for blocks inside the block matrix are incompatible')
+                
+                if col_sizes[j] == 0:
+                    col_sizes[j] = sub_matrices[i, j].dense_shape[1]
+                elif col_sizes[j] != sub_matrices[i, j].dense_shape[1]:
+                    raise ValueError('Given shapes for blocks inside the block matrix are incompatible')
+                
+                
 
         for i in range(shape[0]):
             for j in range(shape[1]):
                 # When a block is defined zero
-                # if type(submatrices[i,j]) ==int:
-                #     if submatrices[i,j] == 0:
-                #         continue
-
-                if type(sub_matrices[i, j]) not in (BlockMatrix, Matrix):
-                    raise TypeError('Blocks inside the block matrix should be of type Matrix() or BlockMatrix(). Declared block {} is of type {}'.format(sub_matrices[i, j], type(sub_matrices[i, j])))
-
-                if sub_matrices[i, j].dense_shape[0] != sub_matrices[i, 0].dense_shape[0] or sub_matrices[i, j].dense_shape[1] != sub_matrices[0, j].dense_shape[1]:
-                    raise ValueError('Given shapes for blocks inside the block matrix are incompatible')
+                if type(sub_matrices[i,j]) == int:
+                    if sub_matrices[i,j] == 0:
+                        continue
 
                 # Compute start and end indices of each block
                 if i >= 1:
-                    row_start_indices[i, j] = row_start_indices[i-1, j] + sub_matrices[i-1, j].dense_shape[0]
+                    row_start_indices[i, j] = row_start_indices[i-1, j] + row_sizes[i-1]
                     row_end_indices[i-1, j] = row_start_indices[i, j]
                 if j >= 1:
-                    col_start_indices[i, j] = row_start_indices[i, j-1] + sub_matrices[i, j-1].dense_shape[1]
+                    col_start_indices[i, j] = row_start_indices[i, j-1] + col_sizes[j-1]
                     col_end_indices[i, j-1] = col_start_indices[i, j]
 
                 self.num_nonzeros += sub_matrices[i, j].num_nonzeros
 
-        row_end_indices[i, j] = row_start_indices[i, j] + sub_matrices[i, j].dense_shape[0]
-        col_end_indices[i, j] = col_start_indices[i, j] + sub_matrices[i, j].dense_shape[1]
+        row_end_indices[i, j] = row_start_indices[i, j] + row_sizes[i]
+        col_end_indices[i, j] = col_start_indices[i, j] + col_sizes[j]
         self.dense_shape = (row_end_indices[i, j], col_end_indices[i, j])
         self.dense_size = np.prod(self.dense_shape)
         self.density = float(self.num_nonzeros / self.dense_size)
@@ -143,7 +164,8 @@ class BlockMatrix(object):
                 ind2 += sub_matrix.num_nonzeros
                 sub_matrix.allocate(data=data[ind1:ind2], copy=copy)
                 ind1 += sub_matrix.num_nonzeros
-        # To test allocate() works with and without copy=True, run all_in_one.py after commenting out self.update_bottom_up() here. This will give correct results when copy=False and incorrect results when copy=True (only the Matrix objects will contain nonzero values, all BlockMatrix objects' data will be populated with zeros)
+        
+        # To test if allocate() works with and without copy=True, run all_in_one.py after commenting out self.update_bottom_up() here. This will give correct results when copy=False and incorrect results when copy=True (only the Matrix objects will contain nonzero values, all BlockMatrix objects' data will be populated with zeros)
         if copy:
             self.update_bottom_up()
 
