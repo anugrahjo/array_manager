@@ -115,11 +115,11 @@ class MatrixComponentsDict(dict):
 
         def check_shape(given_shape):
             if given_shape not in allowed_shapes:
-                raise ValueError('Given shape {} of dense submatrix cannot be broadcast to match the subvector shapes ({}) and ({})'.format(vals.shape, shape1, shape2))
+                raise ValueError('Given shape {} of dense submatrix cannot be broadcast to match the subvector shapes {} and {}'.format(vals.shape, shape1, shape2))
 
         def compare_shapes(shape1, shape2, name1, name2):
             if shape1 != shape2:
-                raise ValueError('Shapes of {} {} and {} {} '.format(name1, shape1, name2, shape2))
+                raise ValueError('Shapes of {}, {} and {}, {} '.format(name1, shape1, name2, shape2))
 
         def check_dtype_vals(given_array):
             if given_array.dtype not in allowed_dtypes:

@@ -1,7 +1,13 @@
 """Define the Vector class"""
 import numpy as np
 from array_manager.core.native_formats.vector_components_dict import VectorComponentsDict
+from array_manager.core.native_formats.matrix_components_dict import MatrixComponentsDict
 from array_manager.core.native_formats.vector import Vector
+from array_manager.core.standard_formats.dense_matrix import DenseMatrix
+from array_manager.core.standard_formats.coo_matrix import COOMatrix
+from array_manager.core.standard_formats.csr_matrix import CSRMatrix
+from array_manager.core.standard_formats.csc_matrix import CSCMatrix
+import scipy.sparse as sp
 
 
 class Matrix(object):
@@ -82,13 +88,9 @@ class Matrix(object):
         #         self[key] = vals
 
     def __getitem__(self, key):
-        # return self.vals_vector.dict_[key]
-        # return self.vals_vector[key]
         return self.vals[key]
 
     def __setitem__(self, key, value):
-        # self.vals_vector.dict_[key][:] = value
-        # self.vals_vector[key] = value
         self.vals[key] = value
 
     def allocate(self, copy=False, data=None):
@@ -120,12 +122,353 @@ class Matrix(object):
     def update_top_down(self):
         pass
 
+    def transpose(self):
+        # Note: Assigning values to the transpose matrix will yield wrong results. Need to be careful while working with transpose matrices.
+
+        new_matrix_components_dict = MatrixComponentsDict(self.matrix_components_dict.vector_components_dict2, self.matrix_components_dict.vector_components_dict1)
+        new_matrix = Matrix(new_matrix_components_dict)
+        # new_matrix.dense_shape = self.dense_shape[::-1]
+        # new_matrix.dense_size = self.dense_size
+        new_matrix.num_nonzeros = self.num_nonzeros
+
+        new_matrix.density = self.density
+        new_matrix.cols = self.rows
+        new_matrix.rows = self.cols
+        new_matrix.vals = self.vals
+
+        return new_matrix
+
+
     # len() returns the number of nonzeros in the matrix
     def __len__(self):
         return len(self.vals)
 
-    def __iadd__(self, other):
-        self.vals += other.vals
+    def check_type_and_size_inplace(self, other):
+        if isinstance(other, (int, float)):
+            pass
+        
+        elif isinstance(other, Matrix):
+            if other.dense_shape != self.dense_shape:
+                raise TypeError('Arguments should be objects of the Matrix class with same shapes')
+            if len(other) != self.num_nonzeros or other.rows != self.rows or other.cols != self.cols:
+                raise TypeError('Arguments should be objects of the Matrix class with same sparsity structure')
 
+        else:
+            raise TypeError('Argument should be either an object of the Matrix class or a scalar (int or float)')
+
+    def check_type_and_size(self, other):
+        if isinstance(other, (int, float)):
+            pass
+
+        # elif isinstance(other, Vector):
+        #     if len(other) != self.dense_shape[1]:
+        #         raise TypeError('Arguments should be objects of the Vector/Matrix/numpy.ndarray class with compatible shapes')
+        
+        elif isinstance(other, (Matrix, DenseMatrix, COOMatrix, CSRMatrix, CSCMatrix)):
+            if other.dense_shape != self.dense_shape:
+                raise TypeError('Arguments should be objects of the Matrix/numpy.ndarray class with same shapes')
+            # if len(other) != self.num_nonzeros:
+            #     raise TypeError('Arguments should be objects of the Vector/Matrix/numpy.ndarray class with compatible shapes')
+        elif isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix)):
+            if len(other.shape) != 2:
+                raise TypeError('Objects of the numpy.ndarray should be matrices')
+            if other.shape != self.dense_shape:
+                raise TypeError('Argument should be objects of the numpy/scipy array class with same shapes')
+        else:
+            raise TypeError('Argument should be either an object of the Matrix/numpy.ndarray class or a scalar (int or float)')
+
+    def scipy_coo(self, native_matrix):
+        return sp.coo_matrix((native_matrix.data, (native_matrix.rows, native_matrix.cols)), shape=native_matrix.dense_shape)
+
+    def __iadd__(self, other):
+        self.check_type_and_size_inplace(other)
+        if isinstance(other, (int, float)):
+            raise NotImplementedError('Adding a nonzero scalar to a sparse matrix is not supported')
+        else:              # isinstance(other, (int, float))
+            self.vals += other.vals
+          
     def __isub__(self, other):
-        self.vals -= other.vals
+        self.check_type_and_size_inplace(other)
+        if isinstance(other, (int, float)):
+            raise NotImplementedError('Subtracting a nonzero scalar to a sparse matrix is not supported')
+        else:              # isinstance(other, (int, float))
+            self.vals -= other.vals
+
+    def __imult__(self, other):
+        self.check_type_and_size_inplace(other)  
+        if isinstance(other, Matrix):
+            self.vals *= other.vals
+        else:
+            self.vals *= other
+    
+    def __itruediv__(self, other):
+        self.check_type_and_size_inplace(other)  
+        if isinstance(other, Matrix):
+            self.vals /= other.vals
+        else:
+            self.vals /= other
+
+    def __ipow__(self, other):
+        self.check_type_and_size_inplace(other)  
+        if isinstance(other, Matrix):
+            self.vals **= other.vals
+        else:
+            self.vals **= other
+        
+
+    # In-place matrix multiplication is not (yet) supported. Use 'a = a @ b' instead of 'a @= b'.
+    
+    # def __imatmul__(self, other):
+    #     if other.dense_shape
+    #     if isinstance(other, Matrix):
+    #         self.data @= other.data
+    #     else:
+    #         raise TypeError('Argument should be either an object of the Vector class or a scalar (int or float)')
+
+    def __add__(self, other):
+        self.check_type_and_size(other)
+        # Returns Matrix object
+        if isinstance(other, (int, float)):
+            new_matrix = Matrix(self.matrix_components_dict)
+            new_data = self.vals.data + other
+            new_matrix.allocate(data=new_data)
+            return new_matrix
+
+        elif isinstance(other, Matrix) and len(other) == self.num_nonzeros: 
+            # Returns Matrix object
+            if other.rows == self.rows and other.cols == self.cols:
+                new_matrix = Matrix(self.matrix_components_dict)
+                new_data = self.vals.data + other.vals.data
+                new_matrix.allocate(data=new_data)
+                return new_matrix
+            # Returns scipy.coo.coo_matrix object
+            else:
+                return self.scipy_coo(self) + self.scipy_coo(other)
+
+        # Returns dense np.ndarray object # new Densematrix is not stored?
+        elif isinstance(other, DenseMatrix):
+            return DenseMatrix(self).data + other.data
+        elif isinstance(other, COOMatrix):
+            scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+            return self.scipy_coo(self) + scipy_matrix
+        elif isinstance(other, CSRMatrix):
+            scipy_matrix = sp.csr_matrix((other.data, other.cols, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) + scipy_matrix
+        elif isinstance(other, CSCMatrix):
+            scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) + scipy_matrix
+
+        else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
+            return self.scipy_coo(self) + other
+
+    def __sub__(self, other):
+        self.check_type_and_size(other)
+        # Returns Matrix object
+        if isinstance(other, (int, float)):
+            new_matrix = Matrix(self.matrix_components_dict)
+            new_data = self.vals.data - other
+            new_matrix.allocate(data=new_data)
+            return new_matrix
+
+        elif isinstance(other, Matrix) and len(other) == self.num_nonzeros: 
+            # Returns Matrix object
+            if other.rows == self.rows and other.cols == self.cols:
+                new_matrix = Matrix(self.matrix_components_dict)
+                new_data = self.vals.data - other.vals.data
+                new_matrix.allocate(data=new_data)
+                return new_matrix
+            # Returns scipy.coo.coo_matrix object
+            else:
+                return self.scipy_coo(self) - self.scipy_coo(other)
+
+        # Returns dense np.ndarray object # new Densematrix is not stored?
+        elif isinstance(other, DenseMatrix):
+            return DenseMatrix(self).data - other.data
+        elif isinstance(other, COOMatrix):
+            scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+            return self.scipy_coo(self) - scipy_matrix
+        elif isinstance(other, CSRMatrix):
+            scipy_matrix = sp.csr_matrix((other.data, other.cols, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) - scipy_matrix
+        elif isinstance(other, CSCMatrix):
+            scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) - scipy_matrix
+
+        else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
+            return self.scipy_coo(self) - other
+
+    def __mult__(self, other):
+        self.check_type_and_size(other)
+        # Returns Matrix object
+        if isinstance(other, (int, float)):
+            new_matrix = Matrix(self.matrix_components_dict)
+            new_data = self.vals.data * other
+            new_matrix.allocate(data=new_data)
+            return new_matrix
+
+        elif isinstance(other, Matrix) and len(other) == self.num_nonzeros: 
+            # Returns Matrix object
+            if other.rows == self.rows and other.cols == self.cols:
+                new_matrix = Matrix(self.matrix_components_dict)
+                new_data = self.vals.data * other.vals.data
+                new_matrix.allocate(data=new_data)
+                return new_matrix
+            # Returns scipy.coo.coo_matrix object
+            else:
+                return self.scipy_coo(self) * self.scipy_coo(other)
+
+        # Returns dense np.ndarray object # new Densematrix is not stored?
+        elif isinstance(other, DenseMatrix):
+            return DenseMatrix(self).data * other.data
+        elif isinstance(other, COOMatrix):
+            scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+            return self.scipy_coo(self) * scipy_matrix
+        elif isinstance(other, CSRMatrix):
+            scipy_matrix = sp.csr_matrix((other.data, other.cols, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) * scipy_matrix
+        elif isinstance(other, CSCMatrix):
+            scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) * scipy_matrix
+
+        else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
+            return self.scipy_coo(self) * other
+    
+    def __truediv__(self, other):
+        self.check_type_and_size(other)
+        # Returns Matrix object
+        if isinstance(other, (int, float)):
+            new_matrix = Matrix(self.matrix_components_dict)
+            new_data = self.vals.data / other
+            new_matrix.allocate(data=new_data)
+            return new_matrix
+
+        elif isinstance(other, Matrix) and len(other) == self.num_nonzeros: 
+            # Returns Matrix object
+            if other.rows == self.rows and other.cols == self.cols:
+                new_matrix = Matrix(self.matrix_components_dict)
+                new_data = self.vals.data / other.vals.data
+                new_matrix.allocate(data=new_data)
+                return new_matrix
+            # Returns scipy.coo.coo_matrix object
+            else:
+                return self.scipy_coo(self) / self.scipy_coo(other)
+
+        # Returns dense np.ndarray object # new Densematrix is not stored?
+        elif isinstance(other, DenseMatrix):
+            return DenseMatrix(self).data / other.data
+        elif isinstance(other, COOMatrix):
+            scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+            return self.scipy_coo(self) / scipy_matrix
+        elif isinstance(other, CSRMatrix):
+            scipy_matrix = sp.csr_matrix((other.data, other.cols, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) / scipy_matrix
+        elif isinstance(other, CSCMatrix):
+            scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) / scipy_matrix
+
+        else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
+            return self.scipy_coo(self) / other
+
+    def __pow__(self, other):
+        self.check_type_and_size(other)
+        # Returns Matrix object
+        if isinstance(other, (int, float)):
+            new_matrix = Matrix(self.matrix_components_dict)
+            new_data = self.vals.data ** other
+            new_matrix.allocate(data=new_data)
+            return new_matrix
+
+        elif isinstance(other, Matrix) and len(other) == self.num_nonzeros: 
+            # Returns Matrix object
+            if other.rows == self.rows and other.cols == self.cols:
+                new_matrix = Matrix(self.matrix_components_dict)
+                new_data = self.vals.data ** other.vals.data
+                new_matrix.allocate(data=new_data)
+                return new_matrix
+            # Returns scipy.coo.coo_matrix object
+            else:
+                return self.scipy_coo(self) ** self.scipy_coo(other)
+
+        # Returns dense np.ndarray object # new Densematrix is not stored?
+        elif isinstance(other, DenseMatrix):
+            return DenseMatrix(self).data ** other.data
+        elif isinstance(other, COOMatrix):
+            scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+            return self.scipy_coo(self) ** scipy_matrix
+        elif isinstance(other, CSRMatrix):
+            scipy_matrix = sp.csr_matrix((other.data, other.cols, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) ** scipy_matrix
+        elif isinstance(other, CSCMatrix):
+            scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+            return self.scipy_coo(self) ** scipy_matrix
+
+        else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
+            return self.scipy_coo(self) ** other
+
+    def __matmul__(self, other):  # (Note: Vector object is the first argument)
+        """
+        Returns a scalar, a numpy array (vector), or a Vector object that results from the given matrix multiplication.
+        """
+        if not(isinstance(other, (Vector, np.ndarray, Matrix, DenseMatrix, COOMatrix, CSRMatrix, CSCMatrix, sp.coo.coo_matrix, sp.csr.csr_matrix, sp.csc.csc_matrix))):
+            raise TypeError('Arguments should be objects of Vector, np.ndarray, Matrix, DenseMatrix, COOMatrix, CSRMatrix, CSCMatrix, sp.coo.coo_matrix,sp.csr.csr_matrix, or sp.csc.csc_matrix  classes')
+        
+        # Vector inner product
+        if isinstance(other, Vector):
+            if len(other) != self.dense_shape[1]:
+                raise TypeError('Arguments should have compatible shapes')
+            else:
+                inner_product = self.scipy_coo(self) @ other.data
+                
+            return inner_product
+
+        # Inner product with np.ndarray 
+        elif isinstance(other, np.ndarray):
+            if len(other.shape) not in (1, 2):
+                raise TypeError('Objects of the numpy.ndarray should be vectors/matrices')
+            
+            # numpy vector inner product
+            if len(other.shape) == 1:
+                if len(other) != self.dense_shape[1]:
+                    raise TypeError('Arguments should have compatible shapes')
+                else:
+                    inner_product = self.scipy_coo(self) @ other
+
+            # numpy matrix inner product
+            else:                             # len(other.shape) = 2
+                if other.shape[0] != self.dense_shape[1] :
+                    raise TypeError('Arguments should have compatible shapes')
+                else:
+                    inner_product = self.scipy_coo(self) @ other
+
+            return inner_product
+
+        # scipy sparse matrix inner product (returns a scipy matrix)
+        elif isinstance(other, (sp.coo.coo_matrix, sp.csr.csr_matrix, sp.csc.csc_matrix)):
+            if self.dense_shape[1] != other.shape[0] :
+                raise TypeError('Arguments should have compatible shapes')
+            else:
+                inner_product = self.scipy_coo(self) @ other
+
+            return inner_product
+
+        # Matrix inner product (returns a scipy matrix)
+        elif isinstance(other, (Matrix, DenseMatrix, COOMatrix, CSRMatrix, CSCMatrix)):
+            if self.dense_shape[1] != other.dense_shape[0]:
+                raise TypeError('Arguments should have compatible shapes')
+            else:
+                # inner_product = Vector(other.native.matrix_components_dict.vector_components_dict2)
+      
+                if isinstance(other, DenseMatrix):
+                    new_data = self.scipy_coo(self) @ other.data
+                elif isinstance(other, COOMatrix):
+                    scipy_matrix = sp.coo_matrix((other.data, (other.rows, other.cols)), shape=other.dense_shape)
+                    new_data = self.scipy_coo(self) @ scipy_matrix
+                elif isinstance(other, CSRMatrix):
+                    scipy_matrix = sp.csr_matrix((data, other.cols, other.indptr), shape=other.dense_shape)
+                    new_data = self.scipy_coo(self) @ scipy_matrix
+                else:
+                    scipy_matrix = sp.csc_matrix((other.data, other.rows, other.indptr), shape=other.dense_shape)
+                    new_data = self.scipy_coo(self) @ scipy_matrix
+
+        # inner_product.allocate(data=new_data, setup_views=other.native.matrix_components_dict.vector_components_dict2.setup_views_)
+        return new_data
