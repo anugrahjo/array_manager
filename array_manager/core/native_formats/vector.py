@@ -27,6 +27,7 @@ class Vector(object):
 
     def allocate(self, data=None, setup_views=False):
         # If data is given, no copy is made, only poiners are stored
+        # User is never supposed to access data, can use allocate if needed
         if data is not None:
             self.data = data
         else:
@@ -96,6 +97,8 @@ class Vector(object):
         else:                    # isinstance(other, (int, float, np.ndarray))
             self.data += other
 
+        return self
+
     def __isub__(self, other):
         self.check_type_and_size(other)
         if isinstance(other, Vector):
@@ -103,19 +106,25 @@ class Vector(object):
         else:
             self.data -= other
 
-    def __imult__(self, other):
+        return self  
+
+    def __imul__(self, other):
         self.check_type_and_size(other)  
         if isinstance(other, Vector):
             self.data *= other.data
         else:
             self.data *= other
     
+        return self
+
     def __itruediv__(self, other):
         self.check_type_and_size(other)
         if isinstance(other, Vector):
             self.data /= other.data
         else:
             self.data /= other
+
+        return self
 
     def __ipow__(self, other):
         self.check_type_and_size(other)
@@ -124,6 +133,7 @@ class Vector(object):
         else:
             self.data **= other
         
+        return self
 
     # In-place matrix multiplication is not (yet) supported. Use 'a = a @ b' instead of 'a @= b'.
     
@@ -158,7 +168,7 @@ class Vector(object):
         new_vector.allocate(data=new_data, setup_views=self.setup_views_)
         return new_vector
 
-    def __mult__(self, other):
+    def __mul__(self, other):
         self.check_type_and_size(other)  
         new_vector = Vector(self.vector_components_dict)
         

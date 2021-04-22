@@ -16,7 +16,7 @@ vec4_dict = VectorComponentsDict()
 
 vec1_dict['f0'] = dict(shape = (3,))
 vec1_dict['f1'] = dict(shape = (2,))
-vec2_dict['xo'] = dict(shape = (2,))
+vec2_dict['x0'] = dict(shape = (2,))
 vec2_dict['x1'] = dict(shape = (2,))
 
 vec3_dict['g0'] = dict(shape = (1,))

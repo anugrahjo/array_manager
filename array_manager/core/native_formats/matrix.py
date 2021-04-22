@@ -186,6 +186,8 @@ class Matrix(object):
             raise NotImplementedError('Adding a nonzero scalar to a sparse matrix is not supported')
         else:              # isinstance(other, (int, float))
             self.vals += other.vals
+
+        return self
           
     def __isub__(self, other):
         self.check_type_and_size_inplace(other)
@@ -194,19 +196,25 @@ class Matrix(object):
         else:              # isinstance(other, (int, float))
             self.vals -= other.vals
 
-    def __imult__(self, other):
+        return self
+
+    def __imul__(self, other):
         self.check_type_and_size_inplace(other)  
         if isinstance(other, Matrix):
             self.vals *= other.vals
         else:
             self.vals *= other
     
+        return self
+
     def __itruediv__(self, other):
         self.check_type_and_size_inplace(other)  
         if isinstance(other, Matrix):
             self.vals /= other.vals
         else:
             self.vals /= other
+
+        return self
 
     def __ipow__(self, other):
         self.check_type_and_size_inplace(other)  
@@ -215,6 +223,8 @@ class Matrix(object):
         else:
             self.vals **= other
         
+        return self
+
 
     # In-place matrix multiplication is not (yet) supported. Use 'a = a @ b' instead of 'a @= b'.
     
@@ -297,7 +307,7 @@ class Matrix(object):
         else: # isinstance(other, (np.ndarray, sp.csr.csr_matrix, sp.csc.csc_matrix, sp.coo.coo_matrix))
             return self.scipy_coo(self) - other
 
-    def __mult__(self, other):
+    def __mul__(self, other):
         self.check_type_and_size(other)
         # Returns Matrix object
         if isinstance(other, (int, float)):
