@@ -3,7 +3,7 @@ import numpy as np
 import scipy.sparse as sp
 
 
-class Vector(object):
+class BlockVector(object):
     """
     Dictionary which contains views for different variables.
     The value corresponding to the key as the name of a subvector represents the view of that subvector which is generated from the self.data attribute of the Vector object.
@@ -14,7 +14,7 @@ class Vector(object):
         Concatenated vector from the dictionary of subvectors 
     """
 
-    def __init__(self, vector_components_dict):
+    def __init__(self, blocks, shapes=None, setup_views=False):
         """
         Initialize the Vector object by allocating a zero vector of desired size.
 
@@ -25,7 +25,7 @@ class Vector(object):
         """
         self.vector_components_dict = vector_components_dict
 
-    def allocate(self, data=None, setup_views=False):
+    def allocate(self, data=None, copy=False, setup_views=False):
         # If data is given, no copy is made, only poiners are stored
         # User is never supposed to access data, can use allocate if needed
         if data is not None:
@@ -39,6 +39,26 @@ class Vector(object):
 
         else:
             self.dict_ = None
+
+        # New addition
+        if data is not None and not copy: 
+            pass
+        else:
+            data = np.zeros(self.num_nonzeros)
+
+        self.vals.allocate(data=data, setup_views=True)
+
+        ind1 = 0
+        ind2 = 0
+        for i in range(len(self.vector_components_dict)):
+                sub_vector = self.sub_vectors[i]
+
+                ind2 += sub_vector.vector_size
+                sub_vector.allocate(data=data[ind1:ind2], copy=copy)
+                ind1 += sub_vector.vector_size
+
+        if copy:
+            self.update_bottom_up()
 
     def setup_views(self, vector_components_dict):
         """
@@ -63,12 +83,6 @@ class Vector(object):
 
     def __setitem__(self, key, value):
         self.dict_[key][:] = value
-
-    def get_data(self,):
-        return self.data
-
-    def set_data(self, data):
-        self.data[:] = data
 
     def __len__(self):
         return self.vector_components_dict.vector_size

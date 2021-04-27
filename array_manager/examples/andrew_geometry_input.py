@@ -130,6 +130,8 @@ print('initialized_cps: ', geometry.data)
 # ERROR: Do not make modifications to data, data is only for accessing the vector
 # geometry.data  = geometry.data*2  # data points to a different memory location. Here, geometry.data is reassigned
 
+geometry.set_data(geometry.get_data() * 2)
+
 # Following options will all work, but the one above leads to errors
 
 # geometry.data[:]  = geometry.data*2
@@ -138,9 +140,10 @@ print('initialized_cps: ', geometry.data)
 
 # geometry.allocate(setup_views=True, data=geometry.data*2)
 
-geometry *= 2                   # recommended way: treat Vector objects like numpy vectors
+# geometry *= 2                   # recommended way: treat Vector objects like numpy vectors
 
 # geometry = geometry * 2       # recommended way: treat Vector objects like numpy vectors
+
 
 print('scaled cps', geometry.data)
 geometry['wing_0'] = geometry['wing_0']*-10000
