@@ -126,7 +126,7 @@ class MatrixComponentsDict(dict):
                 raise TypeError('Given vals are not of type "int" or "float"')
 
         def check_int_array(given_array, name):
-            if given_array.dtype != int:
+            if given_array.dtype not in (int, np.int32, np.int64):
                 raise TypeError('Given {} array is not of type "int"'.format(name))
 
         # If component is dense
