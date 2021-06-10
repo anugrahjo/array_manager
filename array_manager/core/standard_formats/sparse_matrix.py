@@ -27,6 +27,7 @@ class SparseMatrix(object):
         """
         self.duplicate_indices = duplicate_indices
         self.native = native_matrix
+        self.dense_shape = native_matrix.dense_shape
         # Need this (num_nonzeros)?
         self.num_nonzeros = native_matrix.num_nonzeros
         self.data = np.zeros(self.num_nonzeros)

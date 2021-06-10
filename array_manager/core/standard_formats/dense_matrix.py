@@ -25,7 +25,8 @@ class DenseMatrix(object):
         """
         self.duplicate_indices = duplicate_indices
         self.native = native_matrix
-        self.data = np.zeros(native_matrix.dense_shape)
+        self.dense_shape = native_matrix.dense_shape
+        self.data = np.zeros(self.dense_shape)
 
         # (Can also support col major or row major if optimizer requests so. This implementation uses default python ordering which is row major. Col major would be faster with Fortran-based optimizers)
         flattened_indices_of_non_zeros = np.ravel_multi_index((native_matrix.rows, native_matrix.cols), native_matrix.dense_shape)
