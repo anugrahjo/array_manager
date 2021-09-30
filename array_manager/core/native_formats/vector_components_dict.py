@@ -23,6 +23,12 @@ class VectorComponentsDict(dict):
         Initialize a dictionary object with a default value for the vector_size attribute. 
         """
         self.vector_size = 0
+
+        # New addition
+        self.vals = np.array([])
+        self.upper = np.array([])
+        self.lower = np.array([])
+        
         super().__init__()
 
     def __setitem__(self, key, component_dict: Dict):
@@ -43,5 +49,34 @@ class VectorComponentsDict(dict):
         component_dict['start_index'] = self.vector_size
         self.vector_size += size
         component_dict['end_index'] = self.vector_size
+
+        # New addition for design variables
+        if 'vals' in component_dict:
+            if component_dict['vals'] is not None:
+                self.vals = np.append(self.vals, component_dict['vals'].flatten())
+        else:
+            self.vals = np.append(self.vals, np.zeros((size,)))
+
+        # Upper exists means it's a constrained vector
+        if 'upper' in component_dict:
+            if component_dict['equals'] is not None:
+                self.lower = np.append(self.lower, component_dict['equals'].flatten())
+                self.upper = np.append(self.upper, component_dict['equals'].flatten())
+            
+            elif component_dict['upper'] is not None or component_dict['lower'] is not None:
+                if component_dict['upper'] is not None:
+                    self.upper = np.append(self.upper, component_dict['upper'].flatten())
+                else:
+                    self.upper = np.append(self.upper, np.full((size,), np.inf))
+                
+                if component_dict['lower'] is not None:
+                    self.lower = np.append(self.lower, component_dict['lower'].flatten())
+                else:
+                    self.lower = np.append(self.lower, np.full((size,), -np.inf))
+        
+        # else:
+        #     self.upper = np.append(self.upper, np.full((size,), np.inf))
+        #     self.lower = np.append(self.lower, np.full((size,), -np.inf))
+
 
         super().__setitem__(key, component_dict)
