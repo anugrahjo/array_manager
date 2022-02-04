@@ -54,16 +54,40 @@ class VectorComponentsDict(dict):
         if 'vals' in component_dict:
             if component_dict['vals'] is not None:
                 self.vals = np.append(self.vals, component_dict['vals'].flatten())
+            else:
+                self.vals = np.append(self.vals, np.zeros((size,)))
         else:
             self.vals = np.append(self.vals, np.zeros((size,)))
 
+        # # Upper exists means it's a constrained vector
+        # if 'upper' in component_dict:
+        #     if component_dict['equals'] is not None:
+        #         self.lower = np.append(self.lower, component_dict['equals'].flatten())
+        #         self.upper = np.append(self.upper, component_dict['equals'].flatten())
+            
+        #     elif component_dict['upper'] is not None or component_dict['lower'] is not None:
+        #         if component_dict['upper'] is not None:
+        #             self.upper = np.append(self.upper, component_dict['upper'].flatten())
+        #         else:
+        #             self.upper = np.append(self.upper, np.full((size,), np.inf))
+                
+        #         if component_dict['lower'] is not None:
+        #             self.lower = np.append(self.lower, component_dict['lower'].flatten())
+        #         else:
+        #             self.lower = np.append(self.lower, np.full((size,), -np.inf))
+        
+        # # else:
+        # #     self.upper = np.append(self.upper, np.full((size,), np.inf))
+        # #     self.lower = np.append(self.lower, np.full((size,), -np.inf))
+
         # Upper exists means it's a constrained vector
+        # Note: Vectors are also used to create matrices
         if 'upper' in component_dict:
             if component_dict['equals'] is not None:
                 self.lower = np.append(self.lower, component_dict['equals'].flatten())
                 self.upper = np.append(self.upper, component_dict['equals'].flatten())
             
-            elif component_dict['upper'] is not None or component_dict['lower'] is not None:
+            else:
                 if component_dict['upper'] is not None:
                     self.upper = np.append(self.upper, component_dict['upper'].flatten())
                 else:
@@ -73,10 +97,6 @@ class VectorComponentsDict(dict):
                     self.lower = np.append(self.lower, component_dict['lower'].flatten())
                 else:
                     self.lower = np.append(self.lower, np.full((size,), -np.inf))
-        
-        # else:
-        #     self.upper = np.append(self.upper, np.full((size,), np.inf))
-        #     self.lower = np.append(self.lower, np.full((size,), -np.inf))
 
 
         super().__setitem__(key, component_dict)

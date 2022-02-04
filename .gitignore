@@ -1,3 +1,4 @@
+
 **/.#*
 build/
 _build/
@@ -5,3 +6,6 @@ _build/
 *.egg*
 __pycache__
 .vscode
+
+# File systems
+**/*.DS_Store

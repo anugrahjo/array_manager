@@ -66,7 +66,7 @@ class DenseMatrix(object):
         else:
             raise Exception('Arrays with duplicate indices cannot be updated from top to bottom')
 
-    def numpy_array(self):
+    def get_std_array(self):
         return self.data
 
 
