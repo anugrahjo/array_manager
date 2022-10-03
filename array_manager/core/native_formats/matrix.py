@@ -36,7 +36,10 @@ class Matrix(object):
         self.dense_size = matrix_components_dict.dense_size
         self.num_nonzeros = matrix_components_dict.num_nonzeros
 
-        self.density = float(self.num_nonzeros / self.dense_size)
+        if (self.num_nonzeros==0) and (self.dense_size==0):
+            self.density = None
+        else:
+            self.density = float(self.num_nonzeros / self.dense_size)
         self.rows = np.zeros(self.num_nonzeros, dtype=int)
         self.cols = np.zeros(self.num_nonzeros, dtype=int)
 

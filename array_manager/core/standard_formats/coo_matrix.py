@@ -57,5 +57,5 @@ class COOMatrix(SparseMatrix):
             # Initialize with the data given in the native_format
             self.data = self.native.vals.data[self.bottom_up_sorting_indices]
 
-    def scipy_sparse_array(self):
+    def get_std_array(self):
         return sp.coo_matrix((self.data, (self.rows, self.cols)), shape=self.dense_shape)
