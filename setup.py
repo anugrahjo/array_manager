@@ -1,5 +1,4 @@
-from distutils.core import setup
-from setuptools import find_packages
+from setuptools import setup, find_packages
 
 setup(
     name='array_manager',
@@ -10,10 +9,10 @@ setup(
         'numpy',
         'scipy',
         'pint',
-        'sphinx-rtd-theme',
-        'sphinx-code-include',
-        'jupyter-sphinx',
-        'numpydoc',
+#         'sphinx-rtd-theme',
+#         'sphinx-code-include',
+#         'jupyter-sphinx',
+#         'numpydoc',
     ],
 )
 
