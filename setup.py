@@ -8,11 +8,6 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'pint',
-#         'sphinx-rtd-theme',
-#         'sphinx-code-include',
-#         'jupyter-sphinx',
-#         'numpydoc',
     ],
 )
 
