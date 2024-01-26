@@ -94,7 +94,9 @@ class VectorComponentsDict(dict):
         # Appending scalers
         if 'scaler' in component_dict:
             if component_dict['scaler'] is not None:
-                if component_dict['scaler'].shape==component_dict['shape']:
+                if np.isscalar(component_dict['scaler']):
+                    self.scaler = np.append(self.scaler, component_dict['scaler'] * np.ones((size,)))
+                elif component_dict['scaler'].shape==component_dict['shape']:
                     self.scaler = np.append(self.scaler, component_dict['scaler'].flatten())
                 else:
                     raise ValueError(f'Shape of scalers {component_dict["scaler"].shape} provided'
@@ -110,7 +112,10 @@ class VectorComponentsDict(dict):
         # Reason: Vectors are also used to create matrices
         if 'upper' in component_dict:
             if component_dict['equals'] is not None:
-                if component_dict['equals'].shape==component_dict['shape']:
+                if np.isscalar(component_dict['equals']):
+                    self.lower = np.append(self.lower, component_dict['equals'] * np.ones((size,)))
+                    self.upper = np.append(self.upper, component_dict['equals'] * np.ones((size,)))
+                elif component_dict['equals'].shape==component_dict['shape']:
                     self.lower = np.append(self.lower, component_dict['equals'].flatten())
                     self.upper = np.append(self.upper, component_dict['equals'].flatten())
                 else:
@@ -119,7 +124,9 @@ class VectorComponentsDict(dict):
             
             else:
                 if component_dict['upper'] is not None:
-                    if component_dict['upper'].shape==component_dict['shape']:
+                    if np.isscalar(component_dict['upper']):
+                        self.upper = np.append(self.upper, component_dict['upper'] * np.ones((size,)))
+                    elif component_dict['upper'].shape==component_dict['shape']:
                         self.upper = np.append(self.upper, component_dict['upper'].flatten())
                     else:
                         raise ValueError(f'Shape of upper {component_dict["upper"].shape} provided'
@@ -128,7 +135,9 @@ class VectorComponentsDict(dict):
                     self.upper = np.append(self.upper, np.full((size,), np.inf))
                 
                 if component_dict['lower'] is not None:
-                    if component_dict['lower'].shape==component_dict['shape']:
+                    if np.isscalar(component_dict['lower']):
+                        self.lower = np.append(self.lower, component_dict['lower'] * np.ones((size,)))
+                    elif component_dict['lower'].shape==component_dict['shape']:
                         self.lower = np.append(self.lower, component_dict['lower'].flatten())
                     else:
                         raise ValueError(f'Shape of lower {component_dict["lower"].shape} provided'
