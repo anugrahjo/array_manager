@@ -51,7 +51,9 @@ array([1., 2., 3., 0., 0., 0.])
 
 ## Building the documentation
 
-From the repository root, install the documentation dependencies and build:
+From the repository root, remove any previous build artifacts,
+install the documentation dependencies, build the HTML documentation,
+and run the documentation tests:
 
 ```sh
 rm -rf docs/_build
@@ -60,8 +62,12 @@ python -m sphinx -E -a -b html -W --keep-going docs docs/_build/html
 python -m sphinx -E -a -b doctest -W --keep-going docs docs/_build/doctest
 ```
 
-The HTML entry point is `docs/_build/html/index.html`. These commands treat
-warnings as errors and run the documentation examples with Sphinx doctest.
+The HTML entry point is `docs/_build/html/index.html`.
 
-Documentation source files use MyST Markdown (`.md`). Fenced directives preserve
+The first Sphinx command rebuilds all documentation, treat warnings as errors,
+and continue processing after errors to report as many issues as possible.
+The doctest command executes Python examples in the
+documentation recognized by Sphinx's doctest builder.
+
+Documentation source files use MyST Markdown (`.md`). Fenced directives support
 Sphinx features such as API references, navigation, and executable examples.
