@@ -195,12 +195,3 @@ class MatrixComponentsDict(dict):
         component_dict['end_index'] = self.num_nonzeros # - 1
 
         super().__setitem__((name1, name2), component_dict)
-
-
-
-
-
-
-    
-    
-

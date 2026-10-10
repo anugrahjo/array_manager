@@ -70,7 +70,7 @@ class Vector(object):
         self.dict_[key][:] = value
 
     def get_data(self, ):
-        return self.data
+        return self.data.copy()
 
     def set_data(self, data):
         self.data[:] = data
