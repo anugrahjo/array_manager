@@ -69,4 +69,4 @@ print(solution[:2])  # x: [0.66666667 0.33333333]
 print(solution[2:])  # lambda: [-1.33333333]
 ```
 
-See [array_manager/examples](array_manager/examples) for more examples.
+See [examples](examples/) for more examples.
