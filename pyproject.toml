@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "array_manager"
+dynamic = ["version"]
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "array_manager.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["array_manager*"]
+namespaces = false

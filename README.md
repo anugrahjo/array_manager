@@ -1,66 +1,72 @@
+# array_manager
 
-## Build Docs
+Tools for assembling vectors and block matrices from named components, with
+conversion to dense and sparse (COO, CSR, CSC) matrix formats. Built on NumPy
+and SciPy.
+
+## Installation
+
+From the repository root:
 
 ```sh
-make -C docs/ html
+python -m pip install -e .
 ```
 
-## View Generated Docs
+## Usage
 
-Open `docs/_build/html/index.html` in your browser.
+```python
+from array_manager.api import Vector, VectorComponentsDict
 
-## What's in this package?
+components = VectorComponentsDict()
+components["position"] = {"shape": (3,)}
+components["velocity"] = {"shape": (3,)}
 
-- `docs` stores source files and files required by Sphinx and GitHub for generating docs
-  - `_exts` stores extensions for generating docs with extra features
-    like including an n2 diagram
-  - `_build` contains the built docs
-  - `_src_docs` contains docs source files for generating docs
-  - `_static` contains a single file, `custom.css` used to make
-    `jupyter-sphinx` output match the readthedocs theme
-- `atomics` is where all Python code for the project goes
-- `.github/workflows/` contains a file that tells GitHub how to build
-  the docs
+vector = Vector(components)
+vector.allocate(setup_views=True)
+vector["position"] = [1.0, 2.0, 3.0]
 
-Take a look around inside `docs/index.rst` and `docs/_src_docs/` to get
-an idea of how to organize your source files.
+print(vector.data)  # [1. 2. 3. 0. 0. 0.]
+```
 
-## Setting up Docs for your Project
+## Example: a KKT system with mixed matrix formats
 
-To set up docs:
+Minimize `0.5 * x.T @ H @ x` subject to `A @ x = b`. The optimality
+conditions give the KKT system `[[H, A.T], [A, 0]] @ [x, lambda] = [0, b]`.
+Here, the Hessian is dense, the constraint matrix is CSR, and its transpose
+is CSC. Pass each sparse block's values, indices, and index pointers to
+`MatrixComponentsDict`; omitted blocks are zero.
 
-- Make sure to set `SPHINXPROJ` correctly in `docs/Makefile` and `docs/make.bat`
-- I'm not sure if you need `docs/requirements.txt`, but leave it in just in
-  case
-- Use `docs/.embedrc` to use custom directives (may be necesssary only for
-  sphinx_auto_embed, which we no longer use)
-- Change README on `docs/build-docs.sh` to match project name.
-  - NOTE: `docs/build-docs.sh` works only on Linux.
-  - To test docs, run `make -C docs/ html` from the project root.
-- Make sure the project name is correct in `docs/conf.py`.
-- Make sure the author is correct in `docs/conf.py`.
-- The file `.github/workflows/doc_pages_workflow.yml` is used for GitHub
-  to automatically generate docs whenever someone pushes to the `master` branch
-- To generate example scripts for use in docs and tests (must be done
-  manually before running Sphinx), use
-  `atomics/utils/generate_example_scripts.py`.
-  - NOTE: You will need to `pip install docstirng_parser` in order to
-    use `generate_example_scripts.py`. `docstring_parser` is not listed
-    as a project dependency in `setup.py`.
-  - NOTE: You will need to make sure that you are importing the correct
-    project within `generate_example_scripts.py`.
-  - NOTE: Follow the examples in `omtools/examples/` to make example
-    classes. `generate_example_scripts.py` will generate the scripts in
-    `valid/` and `invalid/` directories.
+```python
+import numpy as np
+from scipy.sparse import csr_matrix
+from scipy.sparse.linalg import spsolve
+from array_manager.api import VectorComponentsDict, MatrixComponentsDict, Matrix, CSRMatrix
 
-Use the [Sphinx webpage](https://www.sphinx-doc.org/en/master/) as
-reference.
+H = np.diag([2.0, 4.0])
+A = csr_matrix([[1.0, 1.0]])
+AT = A.T  # CSC format
+b = np.array([1.0])
 
-## API Docs
+variables = VectorComponentsDict()
+variables["x"] = {"shape": (2,)}
+variables["lambda"] = {"shape": (1,)}
 
-For the API docs (under `docs/_src_docs/api/`), use
-[autodoc](https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html).
+blocks = MatrixComponentsDict(variables, variables)
+blocks["x", "x"] = {"vals": H}  # Dense block
+blocks["lambda", "x"] = {  # CSR block
+    "vals": A.data, "cols": A.indices, "ind_ptr": A.indptr,
+}
+blocks["x", "lambda"] = {  # CSC block
+    "vals": AT.data, "rows": AT.indices, "ind_ptr": AT.indptr,
+}
 
-Use `autodoc` to populate `.rst files` in `_src_docs/api/` and add their
-paths to `docs/index.rst` toctree to include API docs for your classes,
-functions, etc.
+kkt = Matrix(blocks)
+kkt.allocate()
+kkt_csr = CSRMatrix(kkt).get_std_array()
+solution = spsolve(kkt_csr, np.concatenate([np.zeros(2), b]))
+
+print(solution[:2])  # x: [0.66666667 0.33333333]
+print(solution[2:])  # lambda: [-1.33333333]
+```
+
+See [array_manager/examples](array_manager/examples) for more examples.
