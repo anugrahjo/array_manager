@@ -10,6 +10,7 @@ The package depends on NumPy and SciPy.
 :maxdepth: 2
 
 src/getting_started
+src/examples
 src/api/api
 ```
 

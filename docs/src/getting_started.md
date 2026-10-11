@@ -31,20 +31,29 @@ To upgrade to the latest commit in development mode, navigate to the repository 
 git pull
 ```
 
-## Create a vector
+## Simplest use case
 
-Define named components with tuple shapes. Enable views when allocating to access
-components by name. Initial values default to zero.
+Create a vector composed of two subvectors or vector components.
 
 ```{doctest}
-
 >>> from array_manager.api import Vector, VectorComponentsDict
+
+>>> # Define vector components with their names and tuple shapes
 >>> components = VectorComponentsDict()
+
+>>> # Components are initialized to zero unless initial values are supplied
 >>> components["position"] = {"shape": (3,)}
 >>> components["velocity"] = {"shape": (3,)}
+
+>>> # Create a vector defined by the components
 >>> vector = Vector(components)
+
+>>> # Allocate memory and enable views to access components later by name
 >>> vector.allocate(setup_views=True)
+
+>>> # Set the values for a vector component to overwrite its initial value
 >>> vector["position"] = [1.0, 2.0, 3.0]
+
 >>> vector.data
 array([1., 2., 3., 0., 0., 0.])
 ```
@@ -64,8 +73,8 @@ python -m sphinx -E -a -b doctest -W --keep-going docs docs/_build/doctest
 
 The HTML entry point is `docs/_build/html/index.html`.
 
-The first Sphinx command rebuilds all documentation, treat warnings as errors,
-and continue processing after errors to report as many issues as possible.
+The first Sphinx command rebuilds all documentation, treats warnings as errors,
+and continues processing after errors to report as many issues as possible.
 The doctest command executes Python examples in the
 documentation recognized by Sphinx's doctest builder.
 
