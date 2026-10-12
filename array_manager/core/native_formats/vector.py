@@ -5,26 +5,61 @@ import scipy.sparse as sp
 
 class Vector(object):
     """
-    Dictionary which contains views for different variables.
-    The value corresponding to the key as the name of a subvector represents the view of that subvector which is generated from the self.data attribute of the Vector object.
+    Store a vector with optional views into its named components.
+
+    Call ``allocate(setup_views=True)`` to enable access by component name.
+    Without explicit data, allocation shares the component dictionary's initial-value array.
+    The value for a key (subvector name) is a view of the subvector
+    generated from the `self.data` attribute.
 
     Attributes
     ----------
     data : np.ndarray
-        Concatenated vector from the dictionary of subvectors 
+        Contiguous values of the concatenated components after allocation.
+
+    Methods
+    -------
+    allocate(data=None, setup_views=False)
+        Set the vector's backing array and optionally create named component views.
     """
     def __init__(self, vector_components_dict):
         """
-        Initialize the Vector object by allocating a zero vector of desired size.
+        Initialize the Vector object by providing a VectorComponentsDict object.
 
         Parameters
         ----------
         vector_components_dict : VectorComponentsDict
-            List of variables that are concatenated
+            Dictionary defining the subvector components of the Vector object.
         """
         self.vector_components_dict = vector_components_dict
 
     def allocate(self, data=None, setup_views=False):
+        """
+        Set the vector's backing array and optionally create component views.
+
+        Parameters
+        ----------
+        data : np.ndarray or None, optional
+            One-dimensional backing array of length ``self.vector_components_dict.vector_size``.
+            The array is used directly without copying. If `None` (the default),
+            use ``self.vector_components_dict.vals``, which contains the component values
+            supplied at definition time, defaulting to zero where no initial values were supplied.
+        setup_views : bool, optional
+            If `True`, create views into the backing array, reshaped to each component's
+            declared shape, enabling access and assignment through ``vector[name]``.
+            If `False` (the default), named component access is disabled.
+
+        Notes
+        -----
+        This method does not allocate a new array or reset existing values.
+        Changes to the vector also affect the supplied array, or the component
+        dictionary's ``vals`` array when ``data`` is None.
+        Pass a copy as ``data`` when independent storage is needed.
+
+        Calling this method again replaces the backing-array reference and
+        recreates or disables named views according to ``setup_views``.
+        The supplied array's type and length are not explicitly validated.
+        """
         # If data is given, no copy is made, only pointers are stored
         # User is never supposed to access data, can use allocate if needed
         if data is not None:
@@ -40,22 +75,17 @@ class Vector(object):
 
         self.setup_views_ = setup_views
         if setup_views:
-            self.dict_ = self.setup_views(self.vector_components_dict)
+            self.dict_ = self.setup_views()
 
         else:
             self.dict_ = None
 
-    def setup_views(self, vector_components_dict):
+    def setup_views(self):
         """
-        Setup views for variables that are concatenated into a single vector.
-
-        Parameters
-        ----------
-        variables_set : VariablesSet
-            List of variables that are concatenated
+        Set up views for subvector components that are concatenated into the vector.
         """
         dict_ = {}
-        for key, component_dict in vector_components_dict.items():
+        for key, component_dict in self.vector_components_dict.items():
             shape = component_dict['shape']
             ind1 = component_dict['start_index']
             ind2 = component_dict['end_index']
@@ -224,6 +254,7 @@ class Vector(object):
         new_vector.allocate(data=new_data, setup_views=self.setup_views_)
         return new_vector
 
+    # TODO: The following functionality was never tested or validated
     def __matmul__(self, other):  # (Note: Vector object is the first argument)
         """
         Returns a scalar, a numpy array (vector), or a Vector object that results from the given matrix multiplication.

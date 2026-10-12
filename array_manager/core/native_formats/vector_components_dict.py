@@ -12,6 +12,7 @@ class VectorComponentsDict(dict):
     in an optimization problem.
     Each dictionary in this dictionary (which stores the data pertaining to a subvector) 
     contains values corresponding to nine keys, namely,
+
     - shape       : shape of the subvector
     - size        : size (number of entries) of the subvector
     - start_index : starting index of the subvector in the concatenated contiguous vector containing all subvectors from the VectorComponentsDict object
@@ -63,6 +64,13 @@ class VectorComponentsDict(dict):
             Name for referencing the subvector to be added.
         component_dict : dict
             Subvector dictionary to be added in self.
+            Valid keys are `shape`, `vals`, `upper`, `lower`, `equals`, and `scaler`.
+            `shape` MUST be provided for all subvectors.
+            `upper`, `lower`, and `equals` keys MUST be supplied (maybe with `None` value)
+            for all `component_dict` if the full vector (not just the subvector here) is a constrained vector.
+            `upper`, `lower`, `equals`, and `scaler` accept scalars or arrays matching the component `shape`.
+            Scalars are broadcast; `vals` requires a matching array with the declared component `shape`.
+            A non-None `equals` value sets both `upper` and `lower`.
         """
         if key in self:
             raise KeyError('A subvector called {} is already added before.'.format(key))
@@ -79,30 +87,24 @@ class VectorComponentsDict(dict):
 
         # Additional attributes for design variables or constraints
         # Appending initial values
-        if 'vals' in component_dict:
-            if component_dict['vals'] is not None:
-                if component_dict['vals'].shape==component_dict['shape']:
-                    self.vals = np.append(self.vals, component_dict['vals'].flatten())
-                else:
-                    raise ValueError(f'Shape of initial values {component_dict["vals"].shape} provided'
-                    f'does not match the declared shape of the subvector {component_dict["shape"]}.')
+        if 'vals' in component_dict and component_dict['vals'] is not None:
+            if component_dict['vals'].shape==component_dict['shape']:
+                self.vals = np.append(self.vals, component_dict['vals'].flatten())
             else:
-                self.vals = np.append(self.vals, np.zeros((size,)))
+                raise ValueError(f'Shape of initial values {component_dict["vals"].shape} provided'
+                f'does not match the declared shape of the subvector {component_dict["shape"]}.')
         else:
             self.vals = np.append(self.vals, np.zeros((size,)))
 
         # Appending scalers
-        if 'scaler' in component_dict:
-            if component_dict['scaler'] is not None:
-                if np.isscalar(component_dict['scaler']):
-                    self.scaler = np.append(self.scaler, component_dict['scaler'] * np.ones((size,)))
-                elif component_dict['scaler'].shape==component_dict['shape']:
-                    self.scaler = np.append(self.scaler, component_dict['scaler'].flatten())
-                else:
-                    raise ValueError(f'Shape of scalers {component_dict["scaler"].shape} provided'
-                    f'does not match the declared shape of the subvector {component_dict["shape"]}.')
+        if 'scaler' in component_dict and component_dict['scaler'] is not None:
+            if np.isscalar(component_dict['scaler']):
+                self.scaler = np.append(self.scaler, component_dict['scaler'] * np.ones((size,)))
+            elif component_dict['scaler'].shape==component_dict['shape']:
+                self.scaler = np.append(self.scaler, component_dict['scaler'].flatten())
             else:
-                self.scaler = np.append(self.scaler, np.ones((size,)))
+                raise ValueError(f'Shape of scalers {component_dict["scaler"].shape} provided'
+                f'does not match the declared shape of the subvector {component_dict["shape"]}.')
         else:
             self.scaler = np.append(self.scaler, np.ones((size,)))
         

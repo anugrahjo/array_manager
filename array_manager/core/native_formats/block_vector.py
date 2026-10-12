@@ -1,4 +1,7 @@
-"""Define the Vector class"""
+"""
+Define the BlockVector class.
+Work in progress (never really started since never needed).
+"""
 import numpy as np
 import scipy.sparse as sp
 
