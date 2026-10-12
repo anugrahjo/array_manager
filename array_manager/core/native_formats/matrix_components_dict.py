@@ -1,35 +1,37 @@
 """Define the MatrixComponentsDict class"""
 import numpy as np
 from typing import Dict, Tuple
-from array_manager.core.native_formats.vector import Vector
-
 
 
 class MatrixComponentsDict(dict):
     """
-    Dictionary of dictionaries representing a matrix composed of multiple submatrices. Each dictionary within this dictionary represents data corresponding to a submatrix such as values, row indices, column indices, index pointers, etc.
-    For example, this can be a dictionary of Jacobians in which each Jacobian corresponds to the partial derivative of some function with respect to the design variables in an optimization problem.
-    Each dictionary in this dictionary (which stores the data pertaining to a subvector) contains values corresponding to six keys, namely,
-        1. shape : shape of the subvector
-        5. start_index : starting index of the subvector in the concatenated contiguous vector containing all subvectors from the same class
-        6. end_index : ending index of the subvector in the concatenated contiguous vector containing all subvectors from the same class
+    Dictionary of dictionaries representing a matrix composed of multiple submatrices.
+    Each dictionary within this dictionary represents data corresponding to a submatrix such as
+    its values, row indices, column indices, index pointers, etc.
+    For example, this can be a dictionary of Jacobians in which each Jacobian corresponds to the
+    partial derivative of some function with respect to the design variables in an optimization problem.
+
+    Define submatrix blocks keyed by row and column component names.
+    Each block dictionary can contain dense values or sparse values with local
+    row/column indices and index pointers. Block dimensions and offsets are
+    derived from the two vector component dictionaries. Omitted blocks are zero.
 
     Attributes
     ----------
     vector_components_dict1 : VectorComponentsDict
-        Size of the vector that contains all the subvectors
+        Named components defining the matrix rows.
     vector_components_dict2 : VectorComponentsDict
-        Size of the vector that contains all the subvectors
+        Named components defining the matrix columns.
     num_nonzeros : int
-        Size of the vector that contains all the subvectors
+        Total number of stored entries in the matrix, including explicitly stored zeros.
     dense_shape : tuple
-        Size of the vector that contains all the subvectors
+        Number of rows and columns in the assembled matrix.
     dense_size : int
-        Size of the vector that contains all the subvectors
+        Product of the row and column counts.
     """
     def __init__(self, vector_components_dict1, vector_components_dict2):
         """
-        Initialize a dictionary object with a default value for the vector_size attribute. 
+        Initialize a dictionary object with default values for different attributes.
         """
         # Note: In the case of partials, 1 represents output and 2 represents input respectively.
         self.vector_components_dict1 = vector_components_dict1
@@ -39,15 +41,22 @@ class MatrixComponentsDict(dict):
         self.dense_size = np.prod(self.dense_shape)
         super().__init__()
 
-
-    def __setitem__(self, key : Tuple, component_dict: Dict):
+    def __setitem__(self, key: Tuple, component_dict: Dict):
         """
-        Add/replace a dictionary corresponding to a submatrix in the current list of submatrix dictionaries.
+        Add a dictionary corresponding to a submatrix block to the current dictionary of submatrix dictionaries.
 
         Parameters
         ----------
+        key : tuple of str
+            Pair ``(row_name, column_name)`` identifying the submatrix.
+            ``row_name`` must be a key in ``vector_components_dict1``, and
+            ``column_name`` must be a key in ``vector_components_dict2``.
+            The referenced components determine the submatrix's dimensions
+            and its position in the assembled matrix. The pair must not
+            already exist in this dictionary; existing blocks cannot be
+            replaced through this method.
         component_dict : dict
-            Submatrix dictionary to be added/replaced in self.
+            Submatrix dictionary to be added in self.
         """
         if len(key) != 2:
             raise KeyError('The submatrix key provided {} has only one subvector reference; it should be referenced by two subvector names'.format(key))
